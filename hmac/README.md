@@ -53,7 +53,7 @@ HMAC(散列消息认证码)是一种基于摘要算法, 生成消息认证码的
 
 ```console
 $ sh hmacsha1.c
-$ ./hmacsha1.out 11223344 gg
+$ ./hmacsha1.out 0x11223344 gg
 f919674aea01398d54ef3e6f0df419ddb9482b31
 ```
 

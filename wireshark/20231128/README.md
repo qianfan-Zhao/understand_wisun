@@ -16,10 +16,19 @@ lgtk[0].installed_hash = 20:39
 node_role = ffn-fan11
 ```
 
-GAK秘钥可以通过 wsbrd 的 SDBUS 接口读取:
+GTK/GAK秘钥可以通过 wsbrd 的 SDBUS 接口读取:
 
-```
-24:2f:63:dc:22:a0:7b:4c:0a:f4:56:3c:63:7a:27:50
+```console
+$ ./wsbrd_shell.out print Gtks
+Gtks                      [0]: 46:1d:43:5d:6f:a2:09:94:28:7b:10:86:32:fc:f6:ff
+                          [1]: 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+                          [2]: 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+                          [3]: 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+$ ./wsbrd_shell.out print Gaks
+Gaks                      [0]: 24:2f:63:dc:22:a0:7b:4c:0a:f4:56:3c:63:7a:27:50
+                          [1]: 26:1b:ac:fe:97:e5:2e:f1:3a:e5:d9:af:38:c2:0f:f3
+                          [2]: 26:1b:ac:fe:97:e5:2e:f1:3a:e5:d9:af:38:c2:0f:f3
+                          [3]: 26:1b:ac:fe:97:e5:2e:f1:3a:e5:d9:af:38:c2:0f:f3
 ```
 
 这个秘钥用于解密 ROOT 与 NODE 的通信数据, 可以导入到 wireshark 中使用.

@@ -28,7 +28,7 @@
 
         0x619be19c783eaf1ee950df4f0cc2263030ab699797f7cce0eda35f8401ff5c45
 
-# Message 1 of 4
+# Message 1 of 4 (root -> node)
 
 root 端首先生成一串随机数 ANonce, 并根据 PMK 秘钥和两端的 MAC 地址生成一串 PMKID,
 之后将 ANonce 和 PMKID 一同发送发 node.
@@ -59,7 +59,7 @@ $ ./hmacsha1.out \
 | Border Router generated ANonce | ba34556e833c458b72ba11762cd44d3fb535ab04e323d33d45420f510758c0a7 |
 | PMKID                          | 9556db7aeccbb2b9c2301c116e542fe6                             |
 
-# Message 2 of 4
+# Message 2 of 4 (node -> root)
 
 在第二阶段的时候, node 已经收到了 root 发送来的 ANnoce, 其自身同样会生成一个 SNonce,
 在本次抓包中生成的随机数是:
@@ -107,7 +107,23 @@ $ ./prf.out \
 
 我们这边通过 prf.out 计算出的 PTK 秘钥, 可以与 wsbrd 中记录的数据吻合.
 
-NODE 端计算出 PTK 秘钥之后, 将自己生成的 SNonce 发送给 ROOT, 这是 ROOT 也已经有了
-计算 PTK 的全部信息, 它按照同样的 PRF-384 算法可以计算出同样的 PTK 秘钥. PTK 是一组
-秘钥, 关于其信息可以查看 [key](../key/README.md)
+NODE 端计算出 PTK 秘钥之后, 将自己生成的 SNonce 发送给 ROOT, 第二步结束.
 
+# Message 3 of 4 (root -> node)
+
+当第二步结束, ROOT 收到 NODE 发送来的 SNonce 之后, ROOT 已经获取到了计算 PTK 的全部
+信息, 它按照同样的算法可以计算出同样的 PTK 秘钥. PTK 是一组秘钥的集合, 关于其信息可以
+查看 [key](../key/README.md) 一节.
+
+ROOT 端会生成几组 GTK 秘钥, 与 Lifetime KDE, GTKL KDE 一起, 按照
+[RFC3394](../rfc3394/README.md) 算法, 使用 PTK.KEK 对秘钥进行包装, 并将包装之后的
+数据发送给 NODE 端.
+
+![4way.3](./pic/4way_handshake/4way.3.png)
+![4way.3.wireshark](./pic/4way_handshake/4way.3.wireshark.png)
+
+NODE 端使用同样的 PTK.KEK 对数据进行解包, 并提取 GTK 等秘钥.
+
+# Message 4 of 4 (node -> root)
+
+如果 NODE 能够正确的提取 GTK 等信息, 则四次握手成功, 返回确认消息给 ROOT.

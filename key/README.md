@@ -3,7 +3,7 @@
 
 WISUN 协议中使用了许多种秘钥, 下面来看下秘钥的生成过程.
 
-参考文档: <802.11i-2004.pdf>
+参考文档: <80211-2020.pdf>
 
 # PTK(Pairwise Transient key)
 

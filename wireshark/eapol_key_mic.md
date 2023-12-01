@@ -6,17 +6,14 @@ EAPOL-Key 是用于 ROOT 和 NODE 之间进行秘钥安装的帧, 他的格式�
 ![eapol-key](./pic/4way_handshake/eapol_key_frame.png)
 
 MIC(message integrity code)消息完整性代码, 是位于 EAPOL-Key 中的一个字段, 占用 16
-字节, 用于对 EAPOL-Key 进行完整性和合法性校验. 关于 MIC 的计算方法, 有两个版本:
-
-![eapol key descriptor](./pic/eapol_key_mic/eapol_key_descriptor.png)
-
+字节, 用于对 EAPOL-Key 进行完整性和合法性校验. 关于 MIC 的计算方法, 有两个版本,
 在 [wireshark/20231128](./20231128/node_join.pcapng) 文件中, 可以看到 wsbrd 使用
 的方式是SHA1.
 
 ![wireshark](./pic/eapol_key_mic/eapol_key_wireshark.png)
 
 从计算方式可以看到 MIC 其实就是基于 SHA1 的 [HMAC](../hmac/README.md), 正常的 SHA1
-HMAC 的输出长度是 160 字节, EAPOL-Key 中只去了前 128 字节.
+HMAC 的输出长度是 160 字节, EAPOL-Key 中只取了前 128 字节.
 
 在 [key](../key/README.md) 一节中我们介绍过 PTK, 也知道 PTK 内部包含了三组秘钥,
 这个 MIC 计算使用的秘钥是 PTK.KCK, 在当前抓包的文件中是

@@ -5,7 +5,7 @@
 
 <20130125-FANWG-FANTPS-1v33.pdf> 6.5.2.3 PTK and GTK installation Flow
 
-<ieee 802.11i-2004.pdf>
+<ieee 80211-2020.pdf>
 
 ![4way](./pic/4way_handshake/4way.png)
 

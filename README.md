@@ -1,5 +1,17 @@
-understanad wisun
-=================
+understand wisun
+================
+
+WISUN自身的标准不是开放的, 需要在联盟付费注册账户, 才能拿到. 其PHY部分是基于 IEEE
+802.15.4规范, 还有一部分是基于 IEEE 802.11 规范. IEEE 的规范标准是开放的, 可以在
+IEEE 官网上免费注册一个账号之后下载.
+
+下面贴上两个标准的链接:
+
+[802.15.4-2020 - IEEE Standard for Low-Rate Wireless Networks](https://ieeexplore.ieee.org/document/9144691)
+
+[Part 11: Wireless LAN Medium Access Control (MAC) and Physical Layer (PHY) Specifications](https://ieeexplore.ieee.org/document/9363693)
+
+# 目录
 
 + [node加入br的wireshark包](./wireshark/20231128/README.md)
 + [HMAC是啥](./hmac/README.md)

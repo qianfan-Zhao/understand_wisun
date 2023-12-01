@@ -122,6 +122,9 @@ ROOT 端会生成几组 GTK 秘钥, 与 Lifetime KDE, GTKL KDE 一起, 按照
 ![4way.3](./pic/4way_handshake/4way.3.png)
 ![4way.3.wireshark](./pic/4way_handshake/4way.3.wireshark.png)
 
+关于EAPOL Key Data部分的分析比较长, 在一个新的文档中介绍, 可以参考:
+[eapol_key_data](./eapol_key_data.md)
+
 NODE 端使用同样的 PTK.KEK 对数据进行解包, 并提取 GTK 等秘钥.
 
 # Message 4 of 4 (node -> root)

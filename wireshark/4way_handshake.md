@@ -116,7 +116,7 @@ NODE 端计算出 PTK 秘钥之后, 将自己生成的 SNonce 发送给 ROOT, �
 查看 [key](../key/README.md) 一节.
 
 ROOT 端会生成几组 GTK 秘钥, 与 Lifetime KDE, GTKL KDE 一起, 按照
-[RFC3394](../rfc3394/README.md) 算法, 使用 PTK.KEK 对秘钥进行包装, 并将包装之后的
+[RFC3394](../aes/RFC3394.md) 算法, 使用 PTK.KEK 对秘钥进行包装, 并将包装之后的
 数据发送给 NODE 端.
 
 ![4way.3](./pic/4way_handshake/4way.3.png)

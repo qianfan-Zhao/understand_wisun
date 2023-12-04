@@ -13,7 +13,7 @@ EAPOL Key Data
 ![wireshark](./pic/4way_handshake/4way.3.wireshark.png)
 
 这个数据是按照 AES-Key wrap 的方式包装的, 可以参考:
-[RFC3394](../rfc3394/README.md), 在那个文档中, 我们对 wireshark 中抓到的数据做了
+[RFC3394](../aes/RFC3394.md), 在那个文档中, 我们对 wireshark 中抓到的数据做了
 解包, 可以知道发送前的明文数据是:
 
 ```

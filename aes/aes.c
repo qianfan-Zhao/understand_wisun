@@ -4,7 +4,7 @@
 # AES example
 # qianfan Zhao <qianfanguijin@163.com>
 
-if ! gcc $0 -g -lcrypto -o aes.out ; then
+if ! gcc -Wall $0 -g -lcrypto -o aes.out ; then
         echo "compile failed"
         exit 1
 fi
@@ -106,7 +106,7 @@ aes_test \
 # Sequence 11
 # C.1 Example 1
 aes_test \
-	"6084341b:7162015b4dac255d" \
+	"7162015b4dac255d" \
 	--ccm --Tlen 32 \
 	--key '0x40414243 44454647 48494a4b 4c4d4e4f' \
 	--nonce '0x10111213 141516' \
@@ -116,7 +116,7 @@ aes_test \
 
 # C.2 Example 2
 aes_test \
-	"7f479ffca464:d2a1f0e051ea5f62081a7792073d593d1fc64fbfaccd" \
+	"d2a1f0e051ea5f62081a7792073d593d1fc64fbfaccd" \
 	--ccm --Tlen 48 \
 	--key '0x40414243 44454647 48494a4b 4c4d4e4f' \
 	--nonce '0x10111213 14151617' \
@@ -126,7 +126,7 @@ aes_test \
 
 # C.3 Example 3
 aes_test \
-	"67c99240c7d51048:e3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5484392fbc1b09951" \
+	"e3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5484392fbc1b09951" \
 	--ccm --Tlen 64 \
 	--key '0x40414243 44454647 48494a4b 4c4d4e4f' \
 	--nonce '0x10111213 14151617 18191a1b' \
@@ -269,6 +269,7 @@ static void aes_block_data_add(uint8_t *in, uint8_t n)
 	}
 }
 
+#if 0
 static void aes_block_print(const uint8_t *buf, const char *prompt)
 {
 	printf("%20s ", prompt);
@@ -276,23 +277,33 @@ static void aes_block_print(const uint8_t *buf, const char *prompt)
 		printf("%02x", buf[i]);
 	printf("\n");
 }
+#endif
+
+static int __aes_cbc(AES_KEY *key, const uint8_t *in, size_t inlen,
+		     uint8_t *iv, uint8_t *out)
+{
+	uint8_t plaintext[AES_BLOCK_SIZE];
+
+	for (size_t i = 0; i < inlen; i += AES_BLOCK_SIZE) {
+		memcpy(plaintext, &in[i], AES_BLOCK_SIZE);
+		aes_block_data_xor(plaintext, iv);
+		AES_encrypt(plaintext, iv, key);
+
+		if (out)
+			memcpy(&out[i], iv, AES_BLOCK_SIZE);
+	}
+
+	return inlen;
+}
 
 static int aes_cbc(AES_KEY *key, const uint8_t *in, size_t inlen,
 		   const uint8_t *iv, uint8_t *out)
 {
-	uint8_t plaintext[AES_BLOCK_SIZE], v[AES_BLOCK_SIZE];
+	uint8_t v[AES_BLOCK_SIZE];
 
 	memcpy(v, iv, AES_BLOCK_SIZE);
 
-	for (size_t i = 0; i < inlen; i += AES_BLOCK_SIZE) {
-		memcpy(plaintext, &in[i], AES_BLOCK_SIZE);
-		aes_block_data_xor(plaintext, v);
-		AES_encrypt(plaintext, v, key);
-
-		memcpy(&out[i], v, AES_BLOCK_SIZE);
-	}
-
-	return inlen;
+	return __aes_cbc(key, in, inlen, v, out);
 }
 
 static int aes_ctr(AES_KEY *key, const uint8_t *in, size_t inlen,
@@ -322,11 +333,11 @@ static int aes_ccm(AES_KEY *key, const uint8_t *in, size_t inlen,
 		   int Tlen,
 		   const uint8_t *nonce, size_t nonce_sz,
 		   const uint8_t *adata, size_t adata_sz,
-		   uint8_t *macgen, uint8_t *out)
+		   uint8_t *out)
 {
 	uint8_t ctr[AES_BLOCK_SIZE] = { 0 }, B[2048] = { 0 };
-	uint8_t cipher[AES_BLOCK_SIZE], S0[AES_BLOCK_SIZE];
-	size_t block_size = 0, out_idx = 0, remain = inlen;
+	uint8_t iv[AES_BLOCK_SIZE] = { 0 }, S0[AES_BLOCK_SIZE], T[AES_BLOCK_SIZE];
+	size_t block_size = 0;
 	uint8_t *B_payload;
 	int t, q, n;
 
@@ -385,21 +396,12 @@ static int aes_ccm(AES_KEY *key, const uint8_t *in, size_t inlen,
 	memcpy(B_payload, in, inlen);
 	block_size += aligned_roundup(inlen, AES_BLOCK_SIZE);
 
-	/* 2. Set Y0 - CIPH(B0) */
-	AES_encrypt(&B[0], cipher, key);
-
-	/* 3. For i = 1 to r, do Yi = CIPH(Bi ^ Yi-1) */
-	for (size_t i = AES_BLOCK_SIZE; i < block_size; i += AES_BLOCK_SIZE) {
-		uint8_t Bi[AES_BLOCK_SIZE];
-
-		memcpy(Bi, &B[i], AES_BLOCK_SIZE);
-
-		aes_block_data_xor(Bi, cipher);
-		AES_encrypt(Bi, cipher, key);
-	}
-
-	/* 4. Set T=MSB.Tlen(Yr) */
-	memcpy(macgen, cipher, t);
+	/* 2. Set Y0 - CIPH(B0)
+	 * 3. For i = 1 to r, do Yi = CIPH(Bi ^ Yi-1)
+	 * 4. Set T=MSB.Tlen(Yr)
+	 */
+	__aes_cbc(key, B, block_size, iv, NULL);
+	memcpy(T, iv, AES_BLOCK_SIZE);
 
 	/* 5. Apply the counter generation function to generate the counter
 	 * blocks Ctr0, Ctr1, ... Ctrm, where m = [inlen / 16]
@@ -415,27 +417,14 @@ static int aes_ccm(AES_KEY *key, const uint8_t *in, size_t inlen,
 	 */
 	AES_encrypt(ctr, S0, key);
 	aes_block_data_add(ctr, 1);
-	for (size_t i = 0; i < aligned_roundup(inlen, AES_BLOCK_SIZE);
-						i += AES_BLOCK_SIZE) {
-		size_t sz = remain;
 
-		if (sz > AES_BLOCK_SIZE)
-			sz = AES_BLOCK_SIZE;
-		remain -= sz;
+	aes_ctr(key, B_payload, aligned_roundup(inlen, AES_BLOCK_SIZE),
+		ctr, out);
 
-		AES_encrypt(ctr, cipher, key);
-		memcpy(&out[out_idx], &B_payload[out_idx], sz);
-		aes_block_data_xor(&out[out_idx], cipher);
+	memcpy(&out[inlen], T, t);
+	aes_block_data_xor(&out[inlen], S0);
 
-		aes_block_data_add(ctr, 1);
-		out_idx += sz;
-	}
-
-	memcpy(&out[out_idx], macgen, t);
-	aes_block_data_xor(&out[out_idx], S0);
-	out_idx += t;
-
-	return out_idx;
+	return inlen + t;
 }
 
 enum aes_action {
@@ -496,7 +485,7 @@ static void aes_usage(void)
 int main(int argc, char **argv)
 {
 	uint8_t input[1024], out[sizeof(input) + 8], iv[64], key[64];
-	uint8_t adata[1024], nonce[64], macgen[64];
+	uint8_t adata[1024], nonce[64];
 	size_t input_sz = 0, key_sz = 0, iv_sz = 0, adata_sz = 0, nonce_sz = 0;
 	int Tlen = 0;
 	enum aes_action action = -1;
@@ -677,7 +666,7 @@ int main(int argc, char **argv)
 			      Tlen,
 			      nonce, nonce_sz,
 			      adata, adata_sz,
-			      macgen, out);
+			      out);
 		break;
 	default:
 		aes_usage();
@@ -687,12 +676,6 @@ int main(int argc, char **argv)
 	if (ret <= 0) {
 		fprintf(stderr, "failed\n");
 		return -1;
-	}
-
-	if (action == AES_CCM) {
-		for (int i = 0; i < Tlen / 8; i++)
-			printf("%02x", macgen[i]);
-		printf(":");
 	}
 
 	for (int i = 0; i < ret; i++)

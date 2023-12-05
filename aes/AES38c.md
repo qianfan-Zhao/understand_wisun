@@ -178,8 +178,7 @@ e3b201a9f 5b71a7a 9b1ceaec cd97e70b
 之后再加密数据之后添加 S0 ^ MAC 的结果(16 字节) 作为总的加密数据.
 其中 `S0 = CIPHER(CTR0)`
 
-我们在 [aes.c](./aes.c) 中手动实现了 CCM 算法, 将数据输入之后可以得到加密后的结果.
-输出中 ":" 之前的数据表示 MAC.
+我们在 [aes.c](./aes.c) 中手动实现了 CCM 算法, 将数据输入之后可以得到加密后的结果:
 
 ```console
 $ ./aes.out \
@@ -188,7 +187,7 @@ $ ./aes.out \
 	--nonce '0x10111213 14151617 18191a1b' \
 	--adata '0x00010203 0405060708090a0b 0c0d0e0f 10111213' \
 	'0x20212223 24252627 28292a2b 2c2d2e2f 30313233 34353637'
-67c99240c7d51048:e3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5484392fbc1b09951
+e3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5484392fbc1b09951
 ```
 
 ![example3](./pic/ccm_example3.png)

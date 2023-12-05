@@ -727,6 +727,7 @@ int main(int argc, char **argv)
 		}
 		break;
 	case AES_CCM:
+	case AES_INVCCM:
 		if (nonce_sz == 0) {
 			fprintf(stderr, "CCM need --nonce\n");
 			return -1;

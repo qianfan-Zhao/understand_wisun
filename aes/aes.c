@@ -19,6 +19,7 @@ aes_test () {
 	if [ X"${result}" != X"${expected}" ] ; then
 		echo "${sequence}: test failed"
 		echo "${result}"
+		echo "${expected}"
 		return 1
 	fi
 
@@ -42,7 +43,6 @@ aes_test \
 
 # Appendix C - Example Vectors of AES standard.
 #
-# Sequence 3
 # C.1 AES-128(Nk = 4, Nr = 10)
 aes_test \
 	"69c4e0d86a7b0430d8cdb78070b4c55a" \
@@ -55,7 +55,6 @@ aes_test \
 	"0x69c4e0d86a7b0430d8cdb78070b4c55a" \
 	|| exit $?
 
-# Sequence 5
 # C.2 AES-192(Nk = 6, Nr = 12)
 aes_test \
 	"dda97ca4864cdfe06eaf70a0ec0d7191" \
@@ -68,7 +67,6 @@ aes_test \
 	"0xdda97ca4864cdfe06eaf70a0ec0d7191" \
 	|| exit $?
 
-# Sequence 7
 # ECB test
 aes_test \
 	"69c4e0d86a7b0430d8cdb78070b4c55a69c4e0d86a7b0430d8cdb78070b4c55a" \
@@ -84,7 +82,6 @@ aes_test \
 # Recommendation for Block Cipher Modes of Operation
 # nistspecialpublication800-38a.pdf
 
-# Sequence 9
 # F.2 CBC Example Vectors
 aes_test \
 	"7649abac8119b246cee98e9b12e9197d5086cb9b507219ee95db113a917678b2" \
@@ -92,8 +89,13 @@ aes_test \
 	"--iv" "0x000102030405060708090a0b0c0d0e0f" \
 	"0x6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51" \
 	|| exit $?
+aes_test \
+	"6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51" \
+	"--invcbc" "--key" "0x2b7e151628aed2a6abf7158809cf4f3c" \
+	"--iv" "0x000102030405060708090a0b0c0d0e0f" \
+	"0x7649abac8119b246cee98e9b12e9197d5086cb9b507219ee95db113a917678b2" \
+	|| exit $?
 
-# Sequence 10
 # F.5.1 CTR-AES128
 aes_test \
 	"874d6191b620e3261bef6864990db6ce9806f66b7970fdff8617187bb9fffdff5ae4df3edbd5d35e5b4f09020db03eab1e031dda2fbe03d1792170a0f3009cee" \
@@ -101,9 +103,14 @@ aes_test \
 	"--iv" "0xf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff" \
 	"0x6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710" \
 	|| exit $?
+aes_test \
+	"6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710" \
+	"--invctr" "--key" "0x2b7e151628aed2a6abf7158809cf4f3c" \
+	"--iv" "0xf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff" \
+	"0x874d6191b620e3261bef6864990db6ce9806f66b7970fdff8617187bb9fffdff5ae4df3edbd5d35e5b4f09020db03eab1e031dda2fbe03d1792170a0f3009cee" \
+	|| exit $?
 
 # nistspecialpublication800-38c.pdf
-# Sequence 11
 # C.1 Example 1
 aes_test \
 	"7162015b4dac255d" \
@@ -112,6 +119,14 @@ aes_test \
 	--nonce '0x10111213 141516' \
 	--adata '0x00010203 04050607' \
 	"0x20212223" \
+	|| exit $?
+aes_test \
+	"20212223" \
+	--invccm --Tlen 32 \
+	--key '0x40414243 44454647 48494a4b 4c4d4e4f' \
+	--nonce '0x10111213 141516' \
+	--adata '0x00010203 04050607' \
+	"0x7162015b4dac255d" \
 	|| exit $?
 
 # C.2 Example 2
@@ -123,6 +138,14 @@ aes_test \
 	--adata '0x00010203 0405060708090a0b 0c0d0e0f' \
 	'0x20212223 24252627 28292a2b 2c2d2e2f' \
 	|| exit $?
+aes_test \
+	"202122232425262728292a2b2c2d2e2f" \
+	--invccm --Tlen 48 \
+	--key '0x40414243 44454647 48494a4b 4c4d4e4f' \
+	--nonce '0x10111213 14151617' \
+	--adata '0x00010203 0405060708090a0b 0c0d0e0f' \
+	'0xd2a1f0e051ea5f62081a7792073d593d1fc64fbfaccd' \
+	|| exit $?
 
 # C.3 Example 3
 aes_test \
@@ -132,6 +155,14 @@ aes_test \
 	--nonce '0x10111213 14151617 18191a1b' \
 	--adata '0x00010203 0405060708090a0b 0c0d0e0f 10111213' \
 	'0x20212223 24252627 28292a2b 2c2d2e2f 30313233 34353637' \
+	|| exit $?
+aes_test \
+	"202122232425262728292a2b2c2d2e2f3031323334353637" \
+	--invccm --Tlen 64 \
+	--key '0x40414243 44454647 48494a4b 4c4d4e4f' \
+	--nonce '0x10111213 14151617 18191a1b' \
+	--adata '0x00010203 0405060708090a0b 0c0d0e0f 10111213' \
+	'0xe3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5484392fbc1b09951' \
 	|| exit $?
 
 exit 0
@@ -269,15 +300,14 @@ static void aes_block_data_add(uint8_t *in, uint8_t n)
 	}
 }
 
-#if 0
-static void aes_block_print(const uint8_t *buf, const char *prompt)
+static void __attribute__((unused))
+	aes_block_print(const uint8_t *buf, const char *prompt)
 {
 	printf("%20s ", prompt);
 	for (size_t i = 0; i < AES_BLOCK_SIZE; i++)
 		printf("%02x", buf[i]);
 	printf("\n");
 }
-#endif
 
 static int __aes_cbc(AES_KEY *key, const uint8_t *in, size_t inlen,
 		     uint8_t *iv, uint8_t *out)
@@ -306,6 +336,24 @@ static int aes_cbc(AES_KEY *key, const uint8_t *in, size_t inlen,
 	return __aes_cbc(key, in, inlen, v, out);
 }
 
+static int aes_invcbc(AES_KEY *key, const uint8_t *in, size_t inlen,
+		      const uint8_t *iv, uint8_t *out)
+{
+	uint8_t cipher[AES_BLOCK_SIZE], v[AES_BLOCK_SIZE];
+
+	memcpy(v, iv, AES_BLOCK_SIZE);
+	for (size_t i = 0; i < inlen; i += AES_BLOCK_SIZE) {
+		memcpy(cipher, &in[i], AES_BLOCK_SIZE);
+
+		AES_decrypt(cipher, &out[i], key);
+		aes_block_data_xor(&out[i], v);
+
+		memcpy(v, cipher, AES_BLOCK_SIZE);
+	}
+
+	return inlen;
+}
+
 static int aes_ctr(AES_KEY *key, const uint8_t *in, size_t inlen,
 		   const uint8_t *iv, uint8_t *out)
 {
@@ -329,14 +377,13 @@ static size_t aligned_roundup(size_t sz, size_t align)
 	return (sz + align - 1) / align * align;
 }
 
-static int aes_ccm(AES_KEY *key, const uint8_t *in, size_t inlen,
-		   int Tlen,
-		   const uint8_t *nonce, size_t nonce_sz,
-		   const uint8_t *adata, size_t adata_sz,
-		   uint8_t *out)
+static void aes_ccm_gen_T(AES_KEY *key, const uint8_t *in, size_t inlen,
+			  int Tlen,
+			  const uint8_t *nonce, size_t nonce_sz,
+			  const uint8_t *adata, size_t adata_sz,
+			  uint8_t *T)
 {
-	uint8_t ctr[AES_BLOCK_SIZE] = { 0 }, B[2048] = { 0 };
-	uint8_t iv[AES_BLOCK_SIZE] = { 0 }, S0[AES_BLOCK_SIZE], T[AES_BLOCK_SIZE];
+	uint8_t B[2048] = { 0 }, iv[AES_BLOCK_SIZE] = { 0 };
 	size_t block_size = 0;
 	uint8_t *B_payload;
 	int t, q, n;
@@ -401,7 +448,20 @@ static int aes_ccm(AES_KEY *key, const uint8_t *in, size_t inlen,
 	 * 4. Set T=MSB.Tlen(Yr)
 	 */
 	__aes_cbc(key, B, block_size, iv, NULL);
-	memcpy(T, iv, AES_BLOCK_SIZE);
+	memcpy(T, iv, t);
+}
+
+static int aes_ccm(AES_KEY *key, const uint8_t *in, size_t inlen, int Tlen,
+		   const uint8_t *nonce, size_t nonce_sz,
+		   const uint8_t *adata, size_t adata_sz,
+		   uint8_t *out)
+{
+	uint8_t ctr[AES_BLOCK_SIZE] = { 0 }, S0[AES_BLOCK_SIZE];
+	uint8_t T[AES_BLOCK_SIZE];
+	int t = Tlen / 8, q = 15 - nonce_sz;
+
+	aes_ccm_gen_T(key, in, inlen, Tlen, nonce, nonce_sz,
+		      adata, adata_sz, T);
 
 	/* 5. Apply the counter generation function to generate the counter
 	 * blocks Ctr0, Ctr1, ... Ctrm, where m = [inlen / 16]
@@ -418,13 +478,44 @@ static int aes_ccm(AES_KEY *key, const uint8_t *in, size_t inlen,
 	AES_encrypt(ctr, S0, key);
 	aes_block_data_add(ctr, 1);
 
-	aes_ctr(key, B_payload, aligned_roundup(inlen, AES_BLOCK_SIZE),
-		ctr, out);
+	aes_ctr(key, in, aligned_roundup(inlen, AES_BLOCK_SIZE), ctr, out);
 
 	memcpy(&out[inlen], T, t);
 	aes_block_data_xor(&out[inlen], S0);
 
 	return inlen + t;
+}
+
+static int aes_invccm(AES_KEY *cipher_key,
+		      const uint8_t *in, size_t inlen, int Tlen,
+		      const uint8_t *nonce, size_t nonce_sz,
+		      const uint8_t *adata, size_t adata_sz,
+		      uint8_t *out)
+{
+	uint8_t ctr[AES_BLOCK_SIZE] = { 0 }, S0[AES_BLOCK_SIZE];
+	uint8_t T[AES_BLOCK_SIZE];
+	int t = Tlen / 8, q = 15 - nonce_sz;
+	size_t plaintext_sz = inlen - t;
+
+	/* Step1: If Clen <= Tlen, then return INVALID */
+	if (inlen <= t)
+		return -1;
+
+	ctr[0] = (q - 1);
+	memcpy(&ctr[1], nonce, nonce_sz);
+	AES_encrypt(ctr, S0, cipher_key);
+	aes_block_data_add(ctr, 1);
+
+	/* The decrypt work is done after AES-CTR */
+	aes_ctr(cipher_key, in, aligned_roundup(plaintext_sz, AES_BLOCK_SIZE),
+		ctr, out);
+
+	/* And then verify MAC by using the plaintext */
+	aes_ccm_gen_T(cipher_key, out, plaintext_sz, Tlen, nonce, nonce_sz,
+		      adata, adata_sz, T);
+	aes_block_data_xor(T, S0);
+
+	return memcmp(&in[inlen - t], T, t) ? -1 /* failed */ : plaintext_sz;
 }
 
 enum aes_action {
@@ -435,8 +526,11 @@ enum aes_action {
 	AES_ECB,
 	AES_INVECB,
 	AES_CBC,
+	AES_INVCBC,
 	AES_CTR,
+	AES_INVCTR,
 	AES_CCM,
+	AES_INVCCM,
 
 	AES_ACTION_MAX,
 };
@@ -456,8 +550,11 @@ static struct option long_options[] = {
 	{ "ecb",	no_argument,		NULL,	AES_ECB		},
 	{ "invecb",	no_argument,		NULL,	AES_INVECB	},
 	{ "cbc",	no_argument,		NULL,	AES_CBC		},
+	{ "invcbc",	no_argument,		NULL,	AES_INVCBC	},
 	{ "ctr",	no_argument,		NULL,	AES_CTR		},
+	{ "invctr",	no_argument,		NULL,	AES_INVCTR	},
 	{ "ccm",	no_argument,		NULL,	AES_CCM		},
+	{ "invccm",	no_argument,		NULL,	AES_INVCCM	},
 	{ NULL,		0,			NULL,	0  		},
 };
 
@@ -477,8 +574,11 @@ static void aes_usage(void)
 	fprintf(stderr, "    --ecb:                    AES-ECB\n");
 	fprintf(stderr, "    --invecb:                 AES-ECB inverse\n");
 	fprintf(stderr, "    --cbc:                    AES-CBC\n");
+	fprintf(stderr, "    --invcbc:                 AES-CBC inverse\n");
 	fprintf(stderr, "    --ctr:                    AES-CTR\n");
+	fprintf(stderr, "    --invctr:                 AES-CTR inverse\n");
 	fprintf(stderr, "    --ccm:                    AES-CCM\n");
+	fprintf(stderr, "    --invccm:                 AES-CCM inverse\n");
 	fprintf(stderr, "The input string can be hex number if starting with 0x\n");
 }
 
@@ -598,6 +698,9 @@ int main(int argc, char **argv)
 	case AES_ECB:
 	case AES_INVECB:
 	case AES_CBC:
+	case AES_INVCBC:
+	case AES_CTR:
+	case AES_INVCTR:
 		if (input_sz % AES_BLOCK_SIZE) {
 			fprintf(stderr, "The input string is not block size"
 					" aligned\n");
@@ -615,7 +718,9 @@ int main(int argc, char **argv)
 	/* check iv */
 	switch (action) {
 	case AES_CBC:
+	case AES_INVCBC:
 	case AES_CTR:
+	case AES_INVCTR:
 		if (iv_sz == 0) {
 			fprintf(stderr, "--iv is not input\n");
 			return -1;
@@ -658,7 +763,11 @@ int main(int argc, char **argv)
 	case AES_CBC:
 		ret = aes_cbc(&cipher_key, input, input_sz, iv, out);
 		break;
+	case AES_INVCBC:
+		ret = aes_invcbc(&invcipher_key, input, input_sz, iv, out);
+		break;
 	case AES_CTR:
+	case AES_INVCTR:
 		ret = aes_ctr(&cipher_key, input, input_sz, iv, out);
 		break;
 	case AES_CCM:
@@ -668,15 +777,22 @@ int main(int argc, char **argv)
 			      adata, adata_sz,
 			      out);
 		break;
+	case AES_INVCCM:
+		/* Note: aes_invccm need the cipher key */
+		ret = aes_invccm(&cipher_key, input, input_sz,
+				 Tlen,
+				 nonce, nonce_sz,
+				 adata, adata_sz,
+				 out);
+		break;
 	default:
 		aes_usage();
 		return -1;
 	}
 
-	if (ret <= 0) {
-		fprintf(stderr, "failed\n");
+	/* encrypt or decrypt failed */
+	if (ret <= 0)
 		return -1;
-	}
 
 	for (int i = 0; i < ret; i++)
 		printf("%02x", out[i]);

@@ -77,6 +77,9 @@ CTR 模式是对 Counter 进行 AES 加密, 那自然 Counter 的长度是 16 �
 
 ![aes_ctr](./pic/aes_ctr.png)
 
+通过这个加密流程, 可以看到 CTR 的加密与解密流程相同. 将密文按照同样的流程异或一遍可以
+得到明文.
+
 ```c
 static int aes_ctr(AES_KEY *key, const uint8_t *in, size_t inlen,
 		   const uint8_t *iv, uint8_t *out)

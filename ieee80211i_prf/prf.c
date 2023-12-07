@@ -52,14 +52,25 @@ prf_test \
 	"--data" "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" \
 	|| exit $?
 
+prf_test \
+	"0x2f6962dfbc744c4b2138bb6b3d33054c0x5ecc14f24851d9896395a44ab3964efc0x2090c5bf51a0891209f46c1e1e998f62" \
+	"--algo" "tls10" \
+	"--key" "0xbded7fa5c1699c010be23dd06ada3a48349f21e5f86263d512c0c5cc379f0e780ec55d9844b2f1db02a96453513568d0" \
+	"--prefix" "master secret" \
+	"--data" "0xe5acaf549cd25c22d964c0d930fa4b5261d2507fad84c33715b7b9a864020693135e4d557fdf3aa6406d82975d5c606a9734c9334b42136e96990fbd5358cdb2" \
+	"--bit" "384" \
+	|| exit $?
+
 exit 0
 #endif
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <getopt.h>
+#include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <openssl/hmac.h>
+#include <openssl/kdf.h>
 #include <openssl/err.h>
 
 /* the out size in bytes */
@@ -117,6 +128,26 @@ void ieee80211i_prf(const uint8_t *key, size_t key_len,
 	}
 }
 
+static void tls10_prf(const uint8_t *key, size_t key_len,
+		      const uint8_t *prefix, size_t prefix_len,
+		      const uint8_t *data, size_t data_len,
+		      uint8_t *out, size_t len)
+{
+	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_TLS1_PRF, NULL);
+	uint8_t seed[1024];
+	size_t seed_len = 0;
+
+	mempush(seed, sizeof(seed), &seed_len, prefix, prefix_len);
+	mempush(seed, sizeof(seed), &seed_len, data, data_len);
+
+	EVP_PKEY_derive_init(pctx);
+	EVP_PKEY_CTX_set_tls1_prf_md(pctx, EVP_md5_sha1());
+	EVP_PKEY_CTX_set1_tls1_prf_secret(pctx, key, key_len);
+	EVP_PKEY_CTX_add1_tls1_prf_seed(pctx, seed, seed_len);
+	EVP_PKEY_derive(pctx, out, &len);
+	EVP_PKEY_CTX_free(pctx);
+}
+
 static int xdigit(char ch)
 {
 	int xch = toupper(ch);
@@ -168,6 +199,11 @@ static size_t read_string(uint8_t *buf, size_t bufsz, const char *s)
 	return len;
 }
 
+enum {
+	PRF_ALGO_IEEE802154,
+	PRF_ALGO_TLS10,
+};
+
 static struct option long_options[] = {
 	/* name		has_arg,			*flag,		val */
 	{ "help",	no_argument,			NULL,		'h' },
@@ -175,6 +211,7 @@ static struct option long_options[] = {
 	{ "prefix",	required_argument,		NULL,		'p' },
 	{ "data",	required_argument,		NULL,		'd' },
 	{ "bit",	required_argument,		NULL,		'b' },
+	{ "algo",	required_argument,		NULL,		'a' },
 	{ NULL,		0,				NULL,		 0  },
 };
 
@@ -185,12 +222,14 @@ static void prf_usage(void)
 	fprintf(stderr, " -p --prefix prefix           Input the prefix\n");
 	fprintf(stderr, " -d --data data               Input the data\n");
 	fprintf(stderr, " -b --bit bit                 The output bits, can be 128, 192, 256, 385, 512(default)\n");
+	fprintf(stderr, " -a --algo tp:                Set the algo's type, canbe 802154 or tls10\n");
 	fprintf(stderr, " -h --help:                   Show this informations\n");
 	fprintf(stderr, "The input string can be hex number if starting with 0x\n");
 }
 
 int main(int argc, char *argv[])
 {
+	int algo_type = PRF_ALGO_IEEE802154;
 	size_t key_len = 0, prefix_len = 0, data_len = 0;
 	uint8_t key[64], prefix[64], data[512];
 	uint8_t prf[PRF512_OUTSZ];
@@ -199,7 +238,7 @@ int main(int argc, char *argv[])
 	while (1) {
 		int c, option_index = 0;
 
-		c = getopt_long(argc, argv, "hk:p:d:b:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hk:p:d:b:a:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -236,6 +275,17 @@ int main(int argc, char *argv[])
 				return -1;
 			}
 			break;
+		case 'a':
+			if (!strcmp(optarg, "802154")) {
+				algo_type = PRF_ALGO_IEEE802154;
+			} else if (!strcmp(optarg, "tls10")) {
+				algo_type = PRF_ALGO_TLS10;
+			} else {
+				fprintf(stderr, "invalid algo type %s\n",
+					optarg);
+				return -1;
+			}
+			break;
 		default:
 			prf_usage();
 			return -1;
@@ -247,8 +297,16 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	ieee80211i_prf(key, key_len, prefix, prefix_len, data, data_len,
-		       prf, bits / 8);
+	switch (algo_type) {
+	case PRF_ALGO_IEEE802154:
+		ieee80211i_prf(key, key_len, prefix, prefix_len, data, data_len,
+			       prf, bits / 8);
+		break;
+	case PRF_ALGO_TLS10:
+		tls10_prf(key, key_len, prefix, prefix_len, data, data_len, prf,
+			  bits / 8);
+		break;
+	}
 
 	for (int i = 0; i < bits / 8; i += 16) {
 		int sz = bits / 8 - i;

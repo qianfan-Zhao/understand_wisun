@@ -28,6 +28,9 @@ IEEE 官网上免费注册一个账号之后下载.
 + [2步握手: Group key handshake](./wireshark/2way_handshake.md)
 + [WISUN中的数据加密](./wireshark/data_encrypt.md)
 
+wireshark 的另一个例子:
+
++ [NODE重新请求GTK](./wireshark/20231206/README.md)
 
 非对称加密:
 
@@ -39,3 +42,4 @@ TLS握手
 + [TLS流程](./wireshark/tls.md)
 + [TLS中的ECDHE](./wireshark/tls_ecdhe.md)
 + [TLS客户端证书自证](./wireshark/tls_client_cert_verify.md)
++ [TLS finish](./wireshark/tls_finish.md)

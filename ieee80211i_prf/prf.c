@@ -61,6 +61,14 @@ prf_test \
 	"--bit" "384" \
 	|| exit $?
 
+prf_test \
+	"0x8e4d932530d765a0aae974c304735ecc" \
+	"--algo" "tls12" \
+	"--key" "secret" \
+	"--prefix" "se" "--data" "ed" \
+	"--bit" "128" \
+	|| exit $?
+
 exit 0
 #endif
 #include <stdio.h>
@@ -128,10 +136,11 @@ void ieee80211i_prf(const uint8_t *key, size_t key_len,
 	}
 }
 
-static void tls10_prf(const uint8_t *key, size_t key_len,
-		      const uint8_t *prefix, size_t prefix_len,
-		      const uint8_t *data, size_t data_len,
-		      uint8_t *out, size_t len)
+static void tls_prf(const EVP_MD *md,
+		    const uint8_t *key, size_t key_len,
+		    const uint8_t *prefix, size_t prefix_len,
+		    const uint8_t *data, size_t data_len,
+		    uint8_t *out, size_t len)
 {
 	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_TLS1_PRF, NULL);
 	uint8_t seed[1024];
@@ -141,11 +150,35 @@ static void tls10_prf(const uint8_t *key, size_t key_len,
 	mempush(seed, sizeof(seed), &seed_len, data, data_len);
 
 	EVP_PKEY_derive_init(pctx);
-	EVP_PKEY_CTX_set_tls1_prf_md(pctx, EVP_md5_sha1());
+	EVP_PKEY_CTX_set_tls1_prf_md(pctx, md);
 	EVP_PKEY_CTX_set1_tls1_prf_secret(pctx, key, key_len);
 	EVP_PKEY_CTX_add1_tls1_prf_seed(pctx, seed, seed_len);
 	EVP_PKEY_derive(pctx, out, &len);
 	EVP_PKEY_CTX_free(pctx);
+}
+
+static void tls10_prf(const uint8_t *key, size_t key_len,
+		      const uint8_t *prefix, size_t prefix_len,
+		      const uint8_t *data, size_t data_len,
+		      uint8_t *out, size_t len)
+{
+	return tls_prf(EVP_md5_sha1(),
+			key, key_len,
+			prefix, prefix_len,
+			data, data_len,
+			out, len);
+}
+
+static void tls12_prf(const uint8_t *key, size_t key_len,
+		      const uint8_t *prefix, size_t prefix_len,
+		      const uint8_t *data, size_t data_len,
+		      uint8_t *out, size_t len)
+{
+	return tls_prf(EVP_sha256(),
+			key, key_len,
+			prefix, prefix_len,
+			data, data_len,
+			out, len);
 }
 
 static int xdigit(char ch)
@@ -202,6 +235,7 @@ static size_t read_string(uint8_t *buf, size_t bufsz, const char *s)
 enum {
 	PRF_ALGO_IEEE802154,
 	PRF_ALGO_TLS10,
+	PRF_ALGO_TLS12,
 };
 
 static struct option long_options[] = {
@@ -222,7 +256,7 @@ static void prf_usage(void)
 	fprintf(stderr, " -p --prefix prefix           Input the prefix\n");
 	fprintf(stderr, " -d --data data               Input the data\n");
 	fprintf(stderr, " -b --bit bit                 The output bits, can be 128, 192, 256, 385, 512(default)\n");
-	fprintf(stderr, " -a --algo tp:                Set the algo's type, canbe 802154 or tls10\n");
+	fprintf(stderr, " -a --algo tp:                Set the algo's type, canbe 802154, tls10, tls12\n");
 	fprintf(stderr, " -h --help:                   Show this informations\n");
 	fprintf(stderr, "The input string can be hex number if starting with 0x\n");
 }
@@ -232,7 +266,7 @@ int main(int argc, char *argv[])
 	int algo_type = PRF_ALGO_IEEE802154;
 	size_t key_len = 0, prefix_len = 0, data_len = 0;
 	uint8_t key[64], prefix[64], data[512];
-	uint8_t prf[PRF512_OUTSZ];
+	uint8_t prf[512];
 	int bits = 512;
 
 	while (1) {
@@ -269,6 +303,7 @@ int main(int argc, char *argv[])
 			case 256:
 			case 384:
 			case 512:
+			case 1024:
 				break;
 			default:
 				prf_usage();
@@ -280,6 +315,8 @@ int main(int argc, char *argv[])
 				algo_type = PRF_ALGO_IEEE802154;
 			} else if (!strcmp(optarg, "tls10")) {
 				algo_type = PRF_ALGO_TLS10;
+			} else if (!strcmp(optarg, "tls12")) {
+				algo_type = PRF_ALGO_TLS12;
 			} else {
 				fprintf(stderr, "invalid algo type %s\n",
 					optarg);
@@ -304,6 +341,10 @@ int main(int argc, char *argv[])
 		break;
 	case PRF_ALGO_TLS10:
 		tls10_prf(key, key_len, prefix, prefix_len, data, data_len, prf,
+			  bits / 8);
+		break;
+	case PRF_ALGO_TLS12:
+		tls12_prf(key, key_len, prefix, prefix_len, data, data_len, prf,
 			  bits / 8);
 		break;
 	}

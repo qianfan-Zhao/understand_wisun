@@ -208,6 +208,9 @@ static const struct ec_curve curves[] = {
 		.nid = NID_X9_62_prime256v1,
 		.name = "prime256v1"
 	}, {
+		.nid = NID_sm2,
+		.name = "sm2",
+	}, {
 		.name = NULL,
 	}
 };
@@ -231,7 +234,7 @@ static struct option long_options[] = {
 
 static void ec_usage(void)
 {
-	fprintf(stderr, "Usage: ec.out curve_name [-n n] [-m m] [-qx, -qy]\n");
+	fprintf(stderr, "Usage: ec.out curve_name [-n n] [-m m] [-qx, -qy] [curve-name]\n");
 	fprintf(stderr, "       The result will be\n");
 	fprintf(stderr, "              generator * n + {q} * m\n");
 	fprintf(stderr, "       q is an optional, default is generator(G)\n");
